@@ -75,6 +75,20 @@ REDIS_PASSWORD=<SENHA_REDIS>
 
 > `EVOLUTION_BASE_URL` e `WEBHOOK_BASE_URL` usam a rede interna — o tráfego CRM↔Evolution não sai do servidor. Crie as tabelas do CRM no Supabase com `npx prisma migrate deploy` (ou via SQL) antes do primeiro deploy.
 
+## 5. Serviço `crm-web` (painel — pasta `web/` deste repositório)
+
+- Tipo: **App** → Source: GitHub (este repo) → **Build path: `/web`** → Build: **Dockerfile**.
+- Porta interna: `3001`. Domínio: `https://painel.seudominio.com`.
+- Variáveis de ambiente:
+
+```env
+# URL interna da API do CRM (mesmo projeto)
+CRM_API_URL=http://<projeto>_<servico-api>:3000/api
+CRM_API_KEY=<CRM_API_KEY>
+# senha de acesso ao painel
+WEB_PASSWORD=<escolha-uma-senha>
+```
+
 ## Ordem de subida e teste
 
 1. Suba `redis` e `evolution-db`, depois `evolution`, por último `crm-api`.
