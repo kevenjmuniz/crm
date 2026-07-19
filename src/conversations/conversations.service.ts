@@ -133,6 +133,22 @@ export class ConversationsService {
     });
   }
 
+  /** Baixa a midia de uma mensagem (imagem/audio/video/documento) em base64. */
+  async getMessageMedia(conversationId: string, messageId: string) {
+    const conversation = await this.findOne(conversationId);
+    const message = await this.prisma.message.findFirst({
+      where: { id: messageId, conversationId },
+    });
+    if (!message) throw new NotFoundException('Mensagem nao encontrada');
+    if (!message.externalId) {
+      throw new BadRequestException('Mensagem sem midia disponivel');
+    }
+    return this.evolution.getMediaBase64(
+      conversation.instance.name,
+      message.externalId,
+    );
+  }
+
   /** Atribui a um atendente e/ou fila; abre a conversa. */
   async assign(id: string, data: { assignedToId?: string; queueId?: string }) {
     await this.findOne(id);

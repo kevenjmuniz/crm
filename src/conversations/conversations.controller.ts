@@ -142,6 +142,11 @@ export class ConversationsController {
     return this.conversations.sendMessage(id, dto);
   }
 
+  @Get(':id/messages/:messageId/media')
+  getMedia(@Param('id') id: string, @Param('messageId') messageId: string) {
+    return this.conversations.getMessageMedia(id, messageId);
+  }
+
   @Patch(':id/assign')
   assign(@Param('id') id: string, @Body() dto: AssignDto) {
     return this.conversations.assign(id, dto);

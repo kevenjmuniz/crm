@@ -17,6 +17,80 @@ const statusLabel: Record<string, string> = {
   CLOSED: 'Fechadas',
 };
 
+const MEDIA_TYPES = ['IMAGE', 'AUDIO', 'VIDEO', 'DOCUMENT', 'STICKER'];
+
+function MediaBubble({
+  conversationId,
+  message,
+}: {
+  conversationId: string;
+  message: Message;
+}) {
+  const [media, setMedia] = useState<{ src: string; mime: string } | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  async function load() {
+    setLoading(true);
+    setError('');
+    try {
+      const data = await api<{ base64: string; mimetype?: string }>(
+        `/conversations/${conversationId}/messages/${message.id}/media`,
+      );
+      const mime =
+        data.mimetype ??
+        (message.type === 'IMAGE'
+          ? 'image/jpeg'
+          : message.type === 'AUDIO'
+            ? 'audio/ogg'
+            : message.type === 'VIDEO'
+              ? 'video/mp4'
+              : 'application/octet-stream');
+      setMedia({ src: `data:${mime};base64,${data.base64}`, mime });
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (media) {
+    if (media.mime.startsWith('image/'))
+      // eslint-disable-next-line @next/next/no-img-element
+      return <img src={media.src} alt="" className="max-h-64 rounded-lg" />;
+    if (media.mime.startsWith('audio/'))
+      return <audio controls src={media.src} className="max-w-full" />;
+    if (media.mime.startsWith('video/'))
+      return <video controls src={media.src} className="max-h-64 rounded-lg" />;
+    return (
+      <a href={media.src} download className="text-brand-600 underline">
+        Baixar arquivo
+      </a>
+    );
+  }
+
+  return (
+    <div className="space-y-1">
+      <button
+        onClick={load}
+        disabled={loading}
+        className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+      >
+        {loading
+          ? 'Carregando...'
+          : message.type === 'IMAGE'
+            ? '🖼️ Ver imagem'
+            : message.type === 'AUDIO'
+              ? '🎧 Ouvir áudio'
+              : message.type === 'VIDEO'
+                ? '🎬 Ver vídeo'
+                : '📎 Baixar anexo'}
+      </button>
+      {error && <p className="text-xs text-red-500">{error}</p>}
+    </div>
+  );
+}
+
 export default function ConversationsPage() {
   const [filter, setFilter] = useState<'PENDING' | 'OPEN' | 'CLOSED' | ''>('');
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -278,12 +352,18 @@ export default function ConversationsPage() {
                       : 'rounded-bl-sm bg-white'
                   }`}
                 >
-                  {m.type !== 'TEXT' && (
-                    <span className="mr-1 text-xs text-slate-400">
-                      [{m.type.toLowerCase()}]
-                    </span>
+                  {MEDIA_TYPES.includes(m.type) && selected ? (
+                    <div className="mb-1">
+                      <MediaBubble conversationId={selected.id} message={m} />
+                    </div>
+                  ) : (
+                    m.type !== 'TEXT' && (
+                      <span className="mr-1 text-xs text-slate-400">
+                        [{m.type.toLowerCase()}]
+                      </span>
+                    )
                   )}
-                  {m.content ?? <em className="text-slate-400">mídia</em>}
+                  {m.content}
                   <div className="mt-0.5 text-right text-[10px] text-slate-400">
                     {new Date(m.timestamp).toLocaleTimeString('pt-BR', {
                       hour: '2-digit',

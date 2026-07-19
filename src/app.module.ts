@@ -12,6 +12,7 @@ import { ConversationsModule } from './conversations/conversations.module';
 import { PipelinesModule } from './pipelines/pipelines.module';
 import { TeamsModule } from './teams/teams.module';
 import { CampaignsModule } from './campaigns/campaigns.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { CampaignsModule } from './campaigns/campaigns.module';
     PipelinesModule,
     TeamsModule,
     CampaignsModule,
+    DashboardModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ApiKeyGuard }],
 })

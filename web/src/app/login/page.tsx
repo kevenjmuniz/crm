@@ -19,7 +19,7 @@ export default function LoginPage() {
       body: JSON.stringify({ password }),
     });
     setLoading(false);
-    if (res.ok) router.push('/conversations');
+    if (res.ok) router.push('/dashboard');
     else setError('Senha incorreta');
   }
 

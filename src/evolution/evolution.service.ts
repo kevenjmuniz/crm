@@ -141,6 +141,18 @@ export class EvolutionService {
     );
   }
 
+  /** Baixa a midia de uma mensagem em base64 (URLs do WhatsApp sao cifradas). */
+  async getMediaBase64(instanceName: string, messageId: string) {
+    return this.request<{ base64: string; mimetype?: string }>(
+      firstValueFrom(
+        this.http.post(`/chat/getBase64FromMediaMessage/${instanceName}`, {
+          message: { key: { id: messageId } },
+          convertToMp4: false,
+        }),
+      ),
+    );
+  }
+
   /** Verifica se numeros possuem WhatsApp. */
   async checkNumbers(instanceName: string, numbers: string[]) {
     return this.request(
