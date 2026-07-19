@@ -100,6 +100,8 @@ export class WebhooksService {
       },
     });
 
+    await this.ensureDealInPipeline(contact);
+
     const { type, content, mediaUrl } = this.extractContent(data);
 
     await this.prisma.message
@@ -124,6 +126,38 @@ export class WebhooksService {
           return;
         throw err;
       });
+  }
+
+  /**
+   * CRM: todo contato que conversa entra automaticamente como card na
+   * primeira etapa do primeiro funil (se existir e ele ainda nao tiver card).
+   */
+  private async ensureDealInPipeline(contact: {
+    id: string;
+    name: string | null;
+    pushName: string | null;
+    phone: string;
+  }) {
+    const existing = await this.prisma.deal.findFirst({
+      where: { contactId: contact.id },
+      select: { id: true },
+    });
+    if (existing) return;
+
+    const pipeline = await this.prisma.pipeline.findFirst({
+      orderBy: { createdAt: 'asc' },
+      include: { stages: { orderBy: { position: 'asc' }, take: 1 } },
+    });
+    const firstStage = pipeline?.stages[0];
+    if (!firstStage) return;
+
+    await this.prisma.deal.create({
+      data: {
+        title: contact.name ?? contact.pushName ?? contact.phone,
+        stageId: firstStage.id,
+        contactId: contact.id,
+      },
+    });
   }
 
   private async onMessagesUpdate(payload: EvolutionWebhookPayload) {

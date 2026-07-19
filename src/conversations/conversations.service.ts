@@ -14,6 +14,79 @@ export class ConversationsService {
     private readonly evolution: EvolutionService,
   ) {}
 
+  /** Inicia (ou reabre) uma conversa com um numero qualquer. */
+  async start(dto: {
+    phone: string;
+    instanceId: string;
+    text?: string;
+    sentById?: string;
+  }) {
+    const instance = await this.prisma.instance.findUnique({
+      where: { id: dto.instanceId },
+    });
+    if (!instance) throw new NotFoundException('Instancia nao encontrada');
+
+    const contact = await this.prisma.contact.upsert({
+      where: { phone: dto.phone },
+      create: { phone: dto.phone },
+      update: {},
+    });
+
+    const conversation = await this.prisma.conversation.upsert({
+      where: {
+        contactId_instanceId: {
+          contactId: contact.id,
+          instanceId: instance.id,
+        },
+      },
+      create: {
+        contactId: contact.id,
+        instanceId: instance.id,
+        status: 'OPEN',
+      },
+      update: { status: 'OPEN' },
+    });
+
+    await this.ensureDealInPipeline(contact);
+
+    if (dto.text) {
+      await this.sendMessage(conversation.id, {
+        text: dto.text,
+        sentById: dto.sentById,
+      });
+    }
+    return this.findOne(conversation.id);
+  }
+
+  /** Contato que entra em conversa vira card na primeira etapa do funil. */
+  private async ensureDealInPipeline(contact: {
+    id: string;
+    name: string | null;
+    pushName: string | null;
+    phone: string;
+  }) {
+    const existing = await this.prisma.deal.findFirst({
+      where: { contactId: contact.id },
+      select: { id: true },
+    });
+    if (existing) return;
+
+    const pipeline = await this.prisma.pipeline.findFirst({
+      orderBy: { createdAt: 'asc' },
+      include: { stages: { orderBy: { position: 'asc' }, take: 1 } },
+    });
+    const firstStage = pipeline?.stages[0];
+    if (!firstStage) return;
+
+    await this.prisma.deal.create({
+      data: {
+        title: contact.name ?? contact.pushName ?? contact.phone,
+        stageId: firstStage.id,
+        contactId: contact.id,
+      },
+    });
+  }
+
   findAll(params: {
     status?: ConversationStatus;
     queueId?: string;

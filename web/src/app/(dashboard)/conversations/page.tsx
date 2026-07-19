@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '@/lib/api';
 import {
   Conversation,
+  Instance,
   Message,
   Queue,
   UserT,
@@ -25,6 +26,10 @@ export default function ConversationsPage() {
   const [sending, setSending] = useState(false);
   const [users, setUsers] = useState<UserT[]>([]);
   const [queues, setQueues] = useState<Queue[]>([]);
+  const [instances, setInstances] = useState<Instance[]>([]);
+  const [showNew, setShowNew] = useState(false);
+  const [newForm, setNewForm] = useState({ phone: '', instanceId: '', text: '' });
+  const [starting, setStarting] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const loadConversations = useCallback(async () => {
@@ -60,7 +65,35 @@ export default function ConversationsPage() {
   useEffect(() => {
     api<UserT[]>('/teams/users').then(setUsers).catch(() => {});
     api<Queue[]>('/teams/queues').then(setQueues).catch(() => {});
+    api<Instance[]>('/instances').then(setInstances).catch(() => {});
   }, []);
+
+  async function startConversation() {
+    const phone = newForm.phone.replace(/\D/g, '');
+    if (!phone || !newForm.instanceId) {
+      alert('Informe o telefone (com DDI, ex.: 5511999999999) e a instância');
+      return;
+    }
+    setStarting(true);
+    try {
+      const conv = await api<Conversation>('/conversations', {
+        method: 'POST',
+        json: {
+          phone,
+          instanceId: newForm.instanceId,
+          text: newForm.text.trim() || undefined,
+        },
+      });
+      setShowNew(false);
+      setNewForm({ phone: '', instanceId: '', text: '' });
+      await loadConversations();
+      setSelected(conv);
+    } catch (e) {
+      alert((e as Error).message);
+    } finally {
+      setStarting(false);
+    }
+  }
 
   async function openConversation(c: Conversation) {
     setSelected(c);
@@ -111,7 +144,13 @@ export default function ConversationsPage() {
     <div className="flex h-full">
       {/* Lista */}
       <div className="flex w-80 shrink-0 flex-col border-r border-slate-200 bg-white">
-        <div className="border-b border-slate-200 p-3">
+        <div className="space-y-2 border-b border-slate-200 p-3">
+          <button
+            className="btn-primary w-full justify-center"
+            onClick={() => setShowNew(true)}
+          >
+            + Nova conversa
+          </button>
           <div className="flex gap-1">
             {(['', 'PENDING', 'OPEN', 'CLOSED'] as const).map((s) => (
               <button
@@ -275,6 +314,57 @@ export default function ConversationsPage() {
       ) : (
         <div className="flex flex-1 items-center justify-center text-slate-400">
           Selecione uma conversa
+        </div>
+      )}
+
+      {showNew && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => setShowNew(false)}
+        >
+          <div
+            className="card w-full max-w-sm space-y-3"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="font-medium">Nova conversa</p>
+            <input
+              className="input"
+              placeholder="Telefone com DDI (ex.: 5511999999999)"
+              value={newForm.phone}
+              onChange={(e) => setNewForm({ ...newForm, phone: e.target.value })}
+              autoFocus
+            />
+            <select
+              className="input"
+              value={newForm.instanceId}
+              onChange={(e) => setNewForm({ ...newForm, instanceId: e.target.value })}
+            >
+              <option value="">Enviar pela instância...</option>
+              {instances.map((i) => (
+                <option key={i.id} value={i.id}>
+                  {i.name} ({i.status})
+                </option>
+              ))}
+            </select>
+            <textarea
+              className="input min-h-20"
+              placeholder="Primeira mensagem (opcional)"
+              value={newForm.text}
+              onChange={(e) => setNewForm({ ...newForm, text: e.target.value })}
+            />
+            <div className="flex gap-2">
+              <button
+                className="btn-primary flex-1 justify-center"
+                onClick={startConversation}
+                disabled={starting}
+              >
+                {starting ? 'Iniciando...' : 'Iniciar conversa'}
+              </button>
+              <button className="btn-ghost" onClick={() => setShowNew(false)}>
+                Cancelar
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

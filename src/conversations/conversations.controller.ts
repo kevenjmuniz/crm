@@ -15,6 +15,7 @@ import {
   IsString,
   IsUUID,
   IsUrl,
+  Matches,
   Min,
 } from 'class-validator';
 import { ConversationStatus } from '@prisma/client';
@@ -93,9 +94,33 @@ class SendMessageDto {
   sentById?: string;
 }
 
+class StartConversationDto {
+  @IsString()
+  @Matches(/^\d{10,15}$/, {
+    message: 'phone deve ser apenas digitos com DDI, ex.: 5511999999999',
+  })
+  phone!: string;
+
+  @IsUUID()
+  instanceId!: string;
+
+  @IsOptional()
+  @IsString()
+  text?: string;
+
+  @IsOptional()
+  @IsUUID()
+  sentById?: string;
+}
+
 @Controller('conversations')
 export class ConversationsController {
   constructor(private readonly conversations: ConversationsService) {}
+
+  @Post()
+  start(@Body() dto: StartConversationDto) {
+    return this.conversations.start(dto);
+  }
 
   @Get()
   findAll(@Query() query: ListConversationsQuery) {
