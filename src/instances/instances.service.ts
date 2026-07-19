@@ -34,6 +34,12 @@ export class InstancesService {
     return instance;
   }
 
+  /** Re-registra o webhook da instancia (util apos mudar WEBHOOK_BASE_URL). */
+  async refreshWebhook(id: string) {
+    const instance = await this.findOne(id);
+    return this.evolution.setWebhook(instance.name);
+  }
+
   /** Retorna QR code para conectar. */
   async connect(id: string) {
     const instance = await this.findOne(id);

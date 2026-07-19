@@ -63,6 +63,31 @@ export class EvolutionService {
     );
   }
 
+  /** (Re)registra o webhook da instancia apontando para o CRM. */
+  async setWebhook(instanceName: string) {
+    const webhookBase = this.config.get<string>('WEBHOOK_BASE_URL');
+    const token = this.config.get<string>('WEBHOOK_TOKEN');
+    return this.request(
+      firstValueFrom(
+        this.http.post(`/webhook/set/${instanceName}`, {
+          webhook: {
+            enabled: true,
+            url: `${webhookBase}/api/webhooks/evolution/${token}`,
+            byEvents: false,
+            base64: false,
+            events: [
+              'QRCODE_UPDATED',
+              'CONNECTION_UPDATE',
+              'MESSAGES_UPSERT',
+              'MESSAGES_UPDATE',
+              'CONTACTS_UPSERT',
+            ],
+          },
+        }),
+      ),
+    );
+  }
+
   /** Retorna QR code / inicia conexao. */
   async connect(instanceName: string) {
     return this.request(

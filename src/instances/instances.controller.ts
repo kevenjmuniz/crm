@@ -47,6 +47,11 @@ export class InstancesController {
     return this.instances.status(id);
   }
 
+  @Post(':id/webhook')
+  refreshWebhook(@Param('id') id: string) {
+    return this.instances.refreshWebhook(id);
+  }
+
   @Post(':id/logout')
   logout(@Param('id') id: string) {
     return this.instances.logout(id);
