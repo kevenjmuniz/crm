@@ -195,7 +195,7 @@ export default function ConversationsPage() {
                     </span>
                   )}
                 </div>
-                <div className="flex items-center gap-1 text-xs text-slate-400">
+                <div className="flex flex-wrap items-center gap-1 text-xs text-slate-400">
                   <span
                     className={`badge ${
                       c.status === 'PENDING'
@@ -206,6 +206,9 @@ export default function ConversationsPage() {
                     }`}
                   >
                     {statusLabel[c.status]}
+                  </span>
+                  <span className="badge bg-sky-50 text-sky-600">
+                    📱 {c.instance.name}
                   </span>
                   {c.assignedTo && <span>· {c.assignedTo.name}</span>}
                 </div>
