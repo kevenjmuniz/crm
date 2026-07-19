@@ -3,7 +3,7 @@ import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
 import { EvolutionService } from '../evolution/evolution.service';
-import { CAMPAIGN_QUEUE } from './campaigns.module';
+import { CAMPAIGN_QUEUE } from './campaigns.constants';
 import { CampaignJobData } from './campaigns.service';
 
 @Processor(CAMPAIGN_QUEUE, { concurrency: 1 })

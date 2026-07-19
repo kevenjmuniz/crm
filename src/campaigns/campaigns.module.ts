@@ -4,8 +4,7 @@ import { EvolutionModule } from '../evolution/evolution.module';
 import { CampaignsController } from './campaigns.controller';
 import { CampaignsService } from './campaigns.service';
 import { CampaignsProcessor } from './campaigns.processor';
-
-export const CAMPAIGN_QUEUE = 'campaign-dispatch';
+import { CAMPAIGN_QUEUE } from './campaigns.constants';
 
 @Module({
   imports: [

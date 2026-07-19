@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { Queue } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
-import { CAMPAIGN_QUEUE } from './campaigns.module';
+import { CAMPAIGN_QUEUE } from './campaigns.constants';
 
 export interface CampaignJobData {
   campaignId: string;
