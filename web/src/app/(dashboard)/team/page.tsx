@@ -7,8 +7,14 @@ import { Queue, UserT } from '@/lib/types';
 export default function TeamPage() {
   const [users, setUsers] = useState<UserT[]>([]);
   const [queues, setQueues] = useState<Queue[]>([]);
-  const [userForm, setUserForm] = useState({ name: '', email: '', role: 'AGENT' });
+  const [userForm, setUserForm] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role: 'AGENT',
+  });
   const [queueName, setQueueName] = useState('');
+  const [resetting, setResetting] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setUsers(await api<UserT[]>('/teams/users').catch(() => []));
@@ -20,12 +26,38 @@ export default function TeamPage() {
   }, [load]);
 
   async function createUser() {
-    if (!userForm.name || !userForm.email) return;
-    await api('/teams/users', { method: 'POST', json: userForm }).catch((e) =>
-      alert((e as Error).message),
-    );
-    setUserForm({ name: '', email: '', role: 'AGENT' });
-    load();
+    if (!userForm.name || !userForm.email || userForm.password.length < 6) {
+      alert('Preencha nome, e-mail e uma senha com pelo menos 6 caracteres');
+      return;
+    }
+    try {
+      await api('/teams/users', { method: 'POST', json: userForm });
+      setUserForm({ name: '', email: '', password: '', role: 'AGENT' });
+      load();
+    } catch (e) {
+      alert((e as Error).message);
+    }
+  }
+
+  async function resetPassword(user: UserT) {
+    const password = prompt(`Nova senha para ${user.name} (mín. 6 caracteres):`);
+    if (!password) return;
+    if (password.length < 6) {
+      alert('A senha precisa ter pelo menos 6 caracteres');
+      return;
+    }
+    setResetting(user.id);
+    try {
+      await api(`/teams/users/${user.id}/reset-password`, {
+        method: 'POST',
+        json: { password },
+      });
+      alert(`Senha de ${user.name} atualizada.`);
+    } catch (e) {
+      alert((e as Error).message);
+    } finally {
+      setResetting(null);
+    }
   }
 
   async function createQueue() {
@@ -51,8 +83,8 @@ export default function TeamPage() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         <div>
-          <div className="mb-3 flex items-end gap-2">
-            <div className="flex-1">
+          <div className="mb-3 grid grid-cols-2 gap-2">
+            <div>
               <label className="text-xs font-medium text-slate-500">Nome</label>
               <input
                 className="input"
@@ -60,7 +92,7 @@ export default function TeamPage() {
                 onChange={(e) => setUserForm({ ...userForm, name: e.target.value })}
               />
             </div>
-            <div className="flex-1">
+            <div>
               <label className="text-xs font-medium text-slate-500">E-mail</label>
               <input
                 className="input"
@@ -68,19 +100,33 @@ export default function TeamPage() {
                 onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
               />
             </div>
-            <select
-              className="input !w-auto"
-              value={userForm.role}
-              onChange={(e) => setUserForm({ ...userForm, role: e.target.value })}
-            >
-              <option value="AGENT">Atendente</option>
-              <option value="SUPERVISOR">Supervisor</option>
-              <option value="ADMIN">Admin</option>
-            </select>
-            <button className="btn-primary" onClick={createUser}>
-              +
-            </button>
+            <div>
+              <label className="text-xs font-medium text-slate-500">
+                Senha (mín. 6)
+              </label>
+              <input
+                type="password"
+                className="input"
+                value={userForm.password}
+                onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-slate-500">Papel</label>
+              <select
+                className="input"
+                value={userForm.role}
+                onChange={(e) => setUserForm({ ...userForm, role: e.target.value })}
+              >
+                <option value="AGENT">Atendente</option>
+                <option value="SUPERVISOR">Supervisor</option>
+                <option value="ADMIN">Admin</option>
+              </select>
+            </div>
           </div>
+          <button className="btn-primary mb-3 w-full justify-center" onClick={createUser}>
+            + Criar atendente
+          </button>
 
           <div className="card !p-0">
             <table className="w-full text-sm">
@@ -89,6 +135,7 @@ export default function TeamPage() {
                   <th className="px-4 py-3">Atendente</th>
                   <th className="px-4 py-3">Papel</th>
                   <th className="px-4 py-3">Filas</th>
+                  <th className="px-4 py-3" />
                 </tr>
               </thead>
               <tbody>
@@ -119,11 +166,20 @@ export default function TeamPage() {
                         })}
                       </div>
                     </td>
+                    <td className="px-4 py-3 text-right">
+                      <button
+                        className="btn-ghost border border-slate-200 !py-1 !text-xs"
+                        disabled={resetting === u.id}
+                        onClick={() => resetPassword(u)}
+                      >
+                        Redefinir senha
+                      </button>
+                    </td>
                   </tr>
                 ))}
                 {users.length === 0 && (
                   <tr>
-                    <td colSpan={3} className="px-4 py-6 text-center text-slate-400">
+                    <td colSpan={4} className="px-4 py-6 text-center text-slate-400">
                       Nenhum atendente
                     </td>
                   </tr>

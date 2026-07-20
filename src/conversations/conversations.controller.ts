@@ -6,7 +6,10 @@ import {
   Patch,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
+import { AuthUser, CurrentUser } from '../auth/current-user.decorator';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Type } from 'class-transformer';
 import {
   IsEnum,
@@ -122,9 +125,13 @@ export class ConversationsController {
     return this.conversations.start(dto);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get()
-  findAll(@Query() query: ListConversationsQuery) {
-    return this.conversations.findAll(query);
+  findAll(
+    @Query() query: ListConversationsQuery,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.conversations.findAll(query, user);
   }
 
   @Get(':id')

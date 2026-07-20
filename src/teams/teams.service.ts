@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
+import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -8,15 +9,50 @@ export class TeamsService {
 
   // ---- Usuarios / atendentes ----
 
-  createUser(data: { name: string; email: string; role?: UserRole }) {
-    return this.prisma.user.create({ data });
+  async createUser(data: {
+    name: string;
+    email: string;
+    role?: UserRole;
+    password: string;
+  }) {
+    const { password, ...rest } = data;
+    const passwordHash = await bcrypt.hash(password, 10);
+    return this.prisma.user.create({
+      data: { ...rest, passwordHash },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        active: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
   }
 
   listUsers() {
     return this.prisma.user.findMany({
-      include: { queues: { include: { queue: true } } },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        active: true,
+        createdAt: true,
+        updatedAt: true,
+        queues: { include: { queue: true } },
+      },
       orderBy: { name: 'asc' },
     });
+  }
+
+  async resetPassword(id: string, password: string) {
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) throw new NotFoundException('Usuario nao encontrado');
+    const passwordHash = await bcrypt.hash(password, 10);
+    await this.prisma.user.update({ where: { id }, data: { passwordHash } });
+    return { ok: true };
   }
 
   async updateUser(
@@ -25,7 +61,19 @@ export class TeamsService {
   ) {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) throw new NotFoundException('Usuario nao encontrado');
-    return this.prisma.user.update({ where: { id }, data });
+    return this.prisma.user.update({
+      where: { id },
+      data,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        active: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
   }
 
   // ---- Filas / setores ----

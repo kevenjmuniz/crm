@@ -6,6 +6,7 @@ import {
 import { ConversationStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { EvolutionService } from '../evolution/evolution.service';
+import { AuthUser } from '../auth/current-user.decorator';
 
 @Injectable()
 export class ConversationsService {
@@ -87,19 +88,38 @@ export class ConversationsService {
     });
   }
 
-  findAll(params: {
-    status?: ConversationStatus;
-    queueId?: string;
-    assignedToId?: string;
-    page?: number;
-    perPage?: number;
-  }) {
+  async findAll(
+    params: {
+      status?: ConversationStatus;
+      queueId?: string;
+      assignedToId?: string;
+      page?: number;
+      perPage?: number;
+    },
+    user?: AuthUser,
+  ) {
     const { status, queueId, assignedToId, page = 1, perPage = 50 } = params;
     const where: Prisma.ConversationWhereInput = {
       ...(status ? { status } : {}),
       ...(queueId ? { queueId } : {}),
       ...(assignedToId ? { assignedToId } : {}),
     };
+
+    // Atendente comum: so ve as suas + as das filas dele + a caixa geral
+    // (sem atendente e sem fila), para poder captar atendimentos novos.
+    if (user && user.role === 'AGENT') {
+      const myQueues = await this.prisma.queueUser.findMany({
+        where: { userId: user.id },
+        select: { queueId: true },
+      });
+      const queueIds = myQueues.map((q) => q.queueId);
+      where.OR = [
+        { assignedToId: user.id },
+        ...(queueIds.length ? [{ queueId: { in: queueIds } }] : []),
+        { assignedToId: null, queueId: null },
+      ];
+    }
+
     return this.prisma.conversation.findMany({
       where,
       include: {

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
   const router = useRouter();
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -16,11 +17,14 @@ export default function LoginPage() {
     const res = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password }),
+      body: JSON.stringify({ email, password }),
     });
     setLoading(false);
     if (res.ok) router.push('/dashboard');
-    else setError('Senha incorreta');
+    else {
+      const body = await res.json().catch(() => ({}));
+      setError(body?.error ?? 'E-mail ou senha incorretos');
+    }
   }
 
   return (
@@ -31,15 +35,22 @@ export default function LoginPage() {
             💬
           </div>
           <h1 className="text-lg font-semibold">CRM WhatsApp</h1>
-          <p className="text-sm text-slate-500">Entre com a senha do painel</p>
+          <p className="text-sm text-slate-500">Entre com seu e-mail e senha</p>
         </div>
+        <input
+          type="email"
+          className="input"
+          placeholder="E-mail"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          autoFocus
+        />
         <input
           type="password"
           className="input"
           placeholder="Senha"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          autoFocus
         />
         {error && <p className="text-sm text-red-600">{error}</p>}
         <button className="btn-primary w-full justify-center" disabled={loading}>

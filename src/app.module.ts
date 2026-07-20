@@ -13,6 +13,7 @@ import { PipelinesModule } from './pipelines/pipelines.module';
 import { TeamsModule } from './teams/teams.module';
 import { CampaignsModule } from './campaigns/campaigns.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
     TeamsModule,
     CampaignsModule,
     DashboardModule,
+    AuthModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ApiKeyGuard }],
 })

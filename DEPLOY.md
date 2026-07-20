@@ -58,6 +58,8 @@ LOG_LEVEL=ERROR,WARN,INFO
 ```env
 PORT=3000
 CRM_API_KEY=<CRM_API_KEY>
+# assina os tokens de login dos atendentes — gere com: openssl rand -hex 32
+JWT_SECRET=<SEGREDO_ALEATORIO>
 
 DATABASE_URL=postgresql://postgres.<PROJECT_REF>:<SENHA_SUPABASE>@aws-0-<REGIAO>.pooler.supabase.com:6543/postgres?pgbouncer=true
 DIRECT_URL=postgresql://postgres:<SENHA_SUPABASE>@db.<PROJECT_REF>.supabase.co:5432/postgres
@@ -85,9 +87,9 @@ REDIS_PASSWORD=<SENHA_REDIS>
 # URL interna da API do CRM (mesmo projeto)
 CRM_API_URL=http://<projeto>_<servico-api>:3000/api
 CRM_API_KEY=<CRM_API_KEY>
-# senha de acesso ao painel
-WEB_PASSWORD=<escolha-uma-senha>
 ```
+
+> Login é por usuário (e-mail + senha), gerenciado na aba Equipe do próprio painel — não precisa de variável de senha aqui. O primeiro admin precisa ter uma senha definida diretamente no banco (via SQL) na primeira vez; depois disso, admins criam os demais atendentes já com senha pela interface.
 
 ## Ordem de subida e teste
 

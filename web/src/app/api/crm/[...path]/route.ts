@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { AUTH_COOKIE } from '@/lib/auth';
 
 /**
  * Proxy para a API do CRM: o navegador nunca ve a x-api-key.
@@ -9,11 +10,13 @@ async function proxy(req: NextRequest, path: string[]) {
   const url = new URL(`${base}/${path.join('/')}`);
   req.nextUrl.searchParams.forEach((v, k) => url.searchParams.set(k, v));
 
+  const token = req.cookies.get(AUTH_COOKIE)?.value;
   const init: RequestInit = {
     method: req.method,
     headers: {
       'x-api-key': process.env.CRM_API_KEY ?? '',
       'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     cache: 'no-store',
   };

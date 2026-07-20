@@ -14,6 +14,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  MinLength,
 } from 'class-validator';
 import { UserRole } from '@prisma/client';
 import { TeamsService } from './teams.service';
@@ -26,9 +27,19 @@ class CreateUserDto {
   @IsEmail()
   email!: string;
 
+  @IsString()
+  @MinLength(6)
+  password!: string;
+
   @IsOptional()
   @IsEnum(UserRole)
   role?: UserRole;
+}
+
+class ResetPasswordDto {
+  @IsString()
+  @MinLength(6)
+  password!: string;
 }
 
 class UpdateUserDto {
@@ -72,6 +83,11 @@ export class TeamsController {
   @Patch('users/:id')
   updateUser(@Param('id') id: string, @Body() dto: UpdateUserDto) {
     return this.teams.updateUser(id, dto);
+  }
+
+  @Post('users/:id/reset-password')
+  resetPassword(@Param('id') id: string, @Body() dto: ResetPasswordDto) {
+    return this.teams.resetPassword(id, dto.password);
   }
 
   @Post('queues')
